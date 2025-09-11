@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36429.23 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MysqlPoolTest", "MysqlPoolTest.vcxproj", "{5019CC9E-FD6E-4994-9082-EE04BF2FA65B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5019CC9E-FD6E-4994-9082-EE04BF2FA65B}.Debug|x64.ActiveCfg = Debug|x64
+		{5019CC9E-FD6E-4994-9082-EE04BF2FA65B}.Debug|x64.Build.0 = Debug|x64
+		{5019CC9E-FD6E-4994-9082-EE04BF2FA65B}.Debug|x86.ActiveCfg = Debug|Win32
+		{5019CC9E-FD6E-4994-9082-EE04BF2FA65B}.Debug|x86.Build.0 = Debug|Win32
+		{5019CC9E-FD6E-4994-9082-EE04BF2FA65B}.Release|x64.ActiveCfg = Release|x64
+		{5019CC9E-FD6E-4994-9082-EE04BF2FA65B}.Release|x64.Build.0 = Release|x64
+		{5019CC9E-FD6E-4994-9082-EE04BF2FA65B}.Release|x86.ActiveCfg = Release|Win32
+		{5019CC9E-FD6E-4994-9082-EE04BF2FA65B}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B1604B31-DEAE-4A19-9ADF-052DC7E3D062}
+	EndGlobalSection
+EndGlobal
