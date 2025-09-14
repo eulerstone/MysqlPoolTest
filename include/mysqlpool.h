@@ -30,17 +30,17 @@ class MysqlPool {
 
   private:
     MysqlPool();
-    MYSQL* createOneConnect();                    //创建一个新的连接对象
-    MYSQL* getOneConnect();                       //获取一个连接对象
-    void close(MYSQL* conn);                      //关闭连接对象
+    std::shared_ptr<MYSQL> createOneConnect();  //创建一个新的连接对象
+    std::shared_ptr<MYSQL> getOneConnect();     //获取一个连接对象
+    void close(std::shared_ptr<MYSQL> conn);                      //关闭连接对象
     bool isEmpty();                               //连接池队列池是否为空
-    MYSQL* poolFront();                           //连接池队列的队头
+    std::shared_ptr<MYSQL> poolFront();                           //连接池队列的队头
     void poolPop();                               //弹出连接池队列的队头
     MysqlPool(const MysqlPool&) = delete;
     MysqlPool& operator=(const MysqlPool&) = delete;
 
 private:
-    std::queue<MYSQL*> mysqlpool;                 //连接池队列
+    std::queue<std::shared_ptr<MYSQL>> mysqlpool;                 //连接池队列
     const char*   _mysqlhost;                     //mysql主机地址
     const char*   _mysqluser;                     //mysql用户名
     const char*   _mysqlpwd;                      //mysql密码

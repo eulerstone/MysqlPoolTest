@@ -34,22 +34,27 @@ MysqlPool& MysqlPool::getInstance() {
 /*
  *创建一个连接对象
  */
-MYSQL* MysqlPool::createOneConnect() {
-  MYSQL* conn = NULL;
-  conn = mysql_init(conn);
+std::shared_ptr<MYSQL> MysqlPool::createOneConnect() {
+  MYSQL* conn =mysql_init(nullptr);
   if (conn != NULL) {
-    if (mysql_real_connect(conn,
+    if (conn&&mysql_real_connect(conn,
                           _mysqlhost,
                           _mysqluser,
                           _mysqlpwd,
                           _databasename,
                           _port,
                           _socket,
-                          _client_flag)) {
+                          _client_flag)) 
+    {
       connect_count++;
-      return conn;   
+      return std::shared_ptr<MYSQL>(conn, [](MYSQL* conn) {
+          mysql_close(conn);
+        });
     } else {
-      std::cout << mysql_error(conn) << std::endl;
+        if (conn) {
+            std::cerr << mysql_error(conn) << std::endl;
+            mysql_close(conn);
+        }
       return NULL;
     }
   } else {
@@ -67,7 +72,7 @@ bool MysqlPool::isEmpty() {
 /*
  *获取当前连接池队列的队头
  */
-MYSQL* MysqlPool::poolFront() {
+std::shared_ptr<MYSQL> MysqlPool::poolFront() {
   return mysqlpool.front();
 }
 /*
@@ -117,7 +122,7 @@ void MysqlPool::poolPop() {
   return conn;
 }
 */
-MYSQL* MysqlPool::getOneConnect() {
+std::shared_ptr<MYSQL> MysqlPool::getOneConnect() {
     std::unique_lock<std::mutex> lock(poollock);
 
     // 等待直到有可用连接或者还能创建新连接
@@ -125,12 +130,12 @@ MYSQL* MysqlPool::getOneConnect() {
         return !mysqlpool.empty() || connect_count < MAX_CONNECT;
         });
 
-    MYSQL* conn = nullptr;
+    std::shared_ptr<MYSQL> conn;
 
     // 池里有可用连接
     if (!mysqlpool.empty()) {
         conn = poolFront();
-        poolPop();
+        mysqlpool.pop();
     }
     else {
         // 创建新连接
@@ -158,7 +163,7 @@ void MysqlPool::close(MYSQL* conn) {
   }
 }
 */
-void MysqlPool::close(MYSQL* conn) {
+void MysqlPool::close(std::shared_ptr<MYSQL> conn) {
     if (conn) {
         std::lock_guard<std::mutex> lock(poollock);
         mysqlpool.push(conn);
@@ -174,22 +179,24 @@ void MysqlPool::close(MYSQL* conn) {
  * 例如：m["字段"][index]。
  */
 std::map<std::string, std::vector<std::string>> MysqlPool::executeSql(const char* sql) {
-    MYSQL* conn = getOneConnect();
+    auto conn = getOneConnect();
     std::map<std::string, std::vector<std::string>> results;
 
     if (conn) {
-        if (mysql_query(conn, sql) == 0) {
-            MYSQL_RES* res = mysql_store_result(conn);
+        if (mysql_query(conn.get(), sql) == 0) {
+            std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> res(
+                mysql_store_result(conn.get()), mysql_free_result);
+
             if (res) {
                 // 保存字段名
                 MYSQL_FIELD* field;
-                while ((field = mysql_fetch_field(res))) {
+                while ((field = mysql_fetch_field(res.get()))) {
                     results[field->name] = std::vector<std::string>();
                 }
 
                 // 保存行数据
                 MYSQL_ROW row;
-                while ((row = mysql_fetch_row(res))) {
+                while ((row = mysql_fetch_row(res.get()))) {
                     unsigned int i = 0;
                     for (auto it = results.begin(); it != results.end(); ++it) {
                         const char* value = row[i++];
@@ -197,21 +204,20 @@ std::map<std::string, std::vector<std::string>> MysqlPool::executeSql(const char
                         it->second.push_back(value ? std::string(value) : "NULL");
                     }
                 }
-
-                mysql_free_result(res);
             }
             else {
-                if (mysql_field_count(conn) != 0)
-                    std::cerr << mysql_error(conn) << std::endl;
+                if (mysql_field_count(conn.get()) != 0)
+                    std::cerr << mysql_error(conn.get()) << std::endl;
             }
         }
         else {
-            std::cerr << mysql_error(conn) << std::endl;
+            std::cerr << mysql_error(conn.get()) << std::endl;
         }
+        // 不需要手动 mysql_free_result
         close(conn);
     }
     else {
-        std::cerr << "Get connection failed: " << mysql_error(conn) << std::endl;
+        std::cerr << "Get connection failed: " << std::endl;
     }
 
     return results;
@@ -223,7 +229,6 @@ std::map<std::string, std::vector<std::string>> MysqlPool::executeSql(const char
  */
 MysqlPool::~MysqlPool() {
   while (poolSize() != 0) {
-    mysql_close(poolFront());
     poolPop();
     connect_count--;
   }
